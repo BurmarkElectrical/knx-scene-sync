@@ -53,7 +53,7 @@ from .const import (
 # ---------------------------------------------------------------------------
 
 
-def _tracker_schema(defaults: dict | None = None, include_snapshot: bool = False) -> vol.Schema:
+def _tracker_schema(defaults: dict | None = None) -> vol.Schema:
     defaults = defaults or {}
 
     fields: dict = {
@@ -97,81 +97,84 @@ def _tracker_schema(defaults: dict | None = None, include_snapshot: bool = False
             selector.EntitySelectorConfig(multiple=True, integration="knx")
         ),
     }
+    return vol.Schema(fields)
+
+
+def _state_schema(defaults: dict | None = None, include_snapshot: bool = False) -> vol.Schema:
+    defaults = defaults or {}
+
+    fields: dict = {
+        vol.Optional(
+            CONF_STATE_GROUP_ADDRESS, default=defaults.get(CONF_STATE_GROUP_ADDRESS, "")
+        ): selector.TextSelector(),
+        vol.Required(
+            CONF_OFF_ACTION, default=defaults.get(CONF_OFF_ACTION, OFF_ACTION_NONE)
+        ): selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                mode=selector.SelectSelectorMode.LIST,
+                options=[
+                    selector.SelectOptionDict(value=OFF_ACTION_NONE, label="No action"),
+                    selector.SelectOptionDict(
+                        value=OFF_ACTION_ACTIVATE_SCENE, label="Activate another scene"
+                    ),
+                    selector.SelectOptionDict(
+                        value=OFF_ACTION_TURN_OFF, label="Turn all entities off"
+                    ),
+                ],
+            )
+        ),
+        # Only meaningful when Off action above is "Activate another
+        # scene" - always shown (a form can't conditionally hide one
+        # of its own fields) but only read/required in that case. Any
+        # scene, not just ones tracked by this integration. Unlike the
+        # text fields above, EntitySelector validates its value as an
+        # actual entity id - an empty-string default fails that check
+        # outright rather than meaning "unset", so the key is only
+        # included at all when there's a real value.
+        vol.Optional(
+            CONF_OFF_SCENE_ENTITY,
+            **(
+                {"default": defaults[CONF_OFF_SCENE_ENTITY]}
+                if defaults.get(CONF_OFF_SCENE_ENTITY)
+                else {}
+            ),
+        ): selector.EntitySelector(selector.EntitySelectorConfig(domain="scene")),
+        # Slack for numeric attributes (brightness, current_position,
+        # temperature, etc.) only - the on/off state itself is always
+        # compared exactly regardless. Exists for KNX<->HA rounding
+        # drift (e.g. brightness 50% can convert back as 127 or 126)
+        # - see comparator.py. Default 1 rather than 0 (exact match)
+        # since that drift is common enough to be the sensible baseline.
+        vol.Required(
+            CONF_NUMERIC_TOLERANCE, default=defaults.get(CONF_NUMERIC_TOLERANCE, 1)
+        ): selector.NumberSelector(
+            selector.NumberSelectorConfig(min=0, max=20, mode="slider")
+        ),
+        # How long to wait after a tracked entity's state changes
+        # before recomputing whether the scene is active - see
+        # switch.py's module docstring for why this matters (coalesces
+        # a burst of near-simultaneous changes into one recompute).
+        # Different entity types settle at different speeds (a plain
+        # switch is near-instant; a slow cover keeps reporting
+        # position updates throughout its travel) so this is
+        # per-tracker rather than a fixed global value.
+        vol.Required(
+            CONF_DEBOUNCE_SECONDS, default=defaults.get(CONF_DEBOUNCE_SECONDS, 1.5)
+        ): selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=0.5, max=10, step=0.5, mode="slider", unit_of_measurement="s"
+            )
+        ),
+    }
     if include_snapshot:
+        # Lives here (state/snapshot page) rather than the tracker-basics
+        # page, since it's about what gets captured into the snapshot the
+        # state switch compares against - not about the tracker's KNX
+        # identity (name/GA/scene number/entities).
         fields[
             vol.Required(CONF_SNAPSHOT_NOW, default=defaults.get(CONF_SNAPSHOT_NOW, True))
         ] = selector.BooleanSelector()
     return vol.Schema(fields)
-
-
-def _state_schema(defaults: dict | None = None) -> vol.Schema:
-    defaults = defaults or {}
-
-    return vol.Schema(
-        {
-            vol.Optional(
-                CONF_STATE_GROUP_ADDRESS, default=defaults.get(CONF_STATE_GROUP_ADDRESS, "")
-            ): selector.TextSelector(),
-            vol.Required(
-                CONF_OFF_ACTION, default=defaults.get(CONF_OFF_ACTION, OFF_ACTION_NONE)
-            ): selector.SelectSelector(
-                selector.SelectSelectorConfig(
-                    mode=selector.SelectSelectorMode.LIST,
-                    options=[
-                        selector.SelectOptionDict(value=OFF_ACTION_NONE, label="No action"),
-                        selector.SelectOptionDict(
-                            value=OFF_ACTION_ACTIVATE_SCENE, label="Activate another scene"
-                        ),
-                        selector.SelectOptionDict(
-                            value=OFF_ACTION_TURN_OFF, label="Turn all entities off"
-                        ),
-                    ],
-                )
-            ),
-            # Only meaningful when Off action above is "Activate another
-            # scene" - always shown (a form can't conditionally hide one
-            # of its own fields) but only read/required in that case. Any
-            # scene, not just ones tracked by this integration. Unlike the
-            # text fields above, EntitySelector validates its value as an
-            # actual entity id - an empty-string default fails that check
-            # outright rather than meaning "unset", so the key is only
-            # included at all when there's a real value.
-            vol.Optional(
-                CONF_OFF_SCENE_ENTITY,
-                **(
-                    {"default": defaults[CONF_OFF_SCENE_ENTITY]}
-                    if defaults.get(CONF_OFF_SCENE_ENTITY)
-                    else {}
-                ),
-            ): selector.EntitySelector(selector.EntitySelectorConfig(domain="scene")),
-            # Slack for numeric attributes (brightness, current_position,
-            # temperature, etc.) only - the on/off state itself is always
-            # compared exactly regardless. Exists for KNX<->HA rounding
-            # drift (e.g. brightness 50% can convert back as 127 or 126)
-            # - see comparator.py. Default 1 rather than 0 (exact match)
-            # since that drift is common enough to be the sensible baseline.
-            vol.Required(
-                CONF_NUMERIC_TOLERANCE, default=defaults.get(CONF_NUMERIC_TOLERANCE, 1)
-            ): selector.NumberSelector(
-                selector.NumberSelectorConfig(min=0, max=20, mode="slider")
-            ),
-            # How long to wait after a tracked entity's state changes
-            # before recomputing whether the scene is active - see
-            # switch.py's module docstring for why this matters (coalesces
-            # a burst of near-simultaneous changes into one recompute).
-            # Different entity types settle at different speeds (a plain
-            # switch is near-instant; a slow cover keeps reporting
-            # position updates throughout its travel) so this is
-            # per-tracker rather than a fixed global value.
-            vol.Required(
-                CONF_DEBOUNCE_SECONDS, default=defaults.get(CONF_DEBOUNCE_SECONDS, 1.5)
-            ): selector.NumberSelector(
-                selector.NumberSelectorConfig(
-                    min=0.5, max=10, step=0.5, mode="slider", unit_of_measurement="s"
-                )
-            ),
-        }
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -290,7 +293,7 @@ class KnxSceneSyncConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=_tracker_schema(user_input, include_snapshot=True),
+            data_schema=_tracker_schema(user_input),
             errors=errors,
         )
 
@@ -312,7 +315,9 @@ class KnxSceneSyncConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 return self.async_create_entry(title=full_data[CONF_SCENE_NAME], data=full_data)
 
         return self.async_show_form(
-            step_id="state_entity", data_schema=_state_schema(user_input), errors=errors
+            step_id="state_entity",
+            data_schema=_state_schema(user_input, include_snapshot=True),
+            errors=errors,
         )
 
     async def async_step_duplicate_import(
@@ -380,7 +385,7 @@ class KnxSceneSyncOptionsFlow(config_entries.OptionsFlow):
 
         return self.async_show_form(
             step_id="edit",
-            data_schema=_tracker_schema(user_input or entry.data, include_snapshot=False),
+            data_schema=_tracker_schema(user_input or entry.data),
             errors=errors,
         )
 
@@ -433,7 +438,7 @@ class KnxSceneSyncOptionsFlow(config_entries.OptionsFlow):
 
         return self.async_show_form(
             step_id="duplicate",
-            data_schema=_tracker_schema(defaults, include_snapshot=True),
+            data_schema=_tracker_schema(defaults),
             errors=errors,
         )
 
@@ -471,5 +476,7 @@ class KnxSceneSyncOptionsFlow(config_entries.OptionsFlow):
             defaults.pop(CONF_STATE_GROUP_ADDRESS, None)
 
         return self.async_show_form(
-            step_id="duplicate_state", data_schema=_state_schema(defaults), errors=errors
+            step_id="duplicate_state",
+            data_schema=_state_schema(defaults, include_snapshot=True),
+            errors=errors,
         )

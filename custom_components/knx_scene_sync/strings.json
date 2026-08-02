@@ -9,16 +9,14 @@
           "group_address": "Scene control group address (e.g. 1/2/3)",
           "ga_type": "Group address type",
           "scene_number": "KNX scene number (1-64)",
-          "entities": "Entities to snapshot",
-          "snapshot_now": "Snapshot current state now?"
+          "entities": "Entities to snapshot"
         },
         "data_description": {
           "scene_name": "A friendly name for this tracker. Purely cosmetic - has no effect on entity ids or KNX communication, so it's safe to change any time.",
           "group_address": "The KNX group address your scene control object (DPT 18.001) is wired to in ETS. Both the learn (store) and recall (activate) telegrams for this scene use this same address.",
           "ga_type": "DPT 18.001 (default) supports both recall and learn - the KNX Learn Scene button and KNX-side learning are available. DPT 17.001 is a plain 1-byte scene number with no control bit, so it's recall-only - no way to signal 'store' on the wire. Choosing DPT 17.001 removes the Learn button entirely, since there's no valid telegram it could send. Recall, state feedback, and the Snapshot Entities button work identically either way.",
           "scene_number": "The KNX scene number this tracker corresponds to on that group address, 1-64. Must be unique per group address - one GA can have up to 64 different tracked scenes, each with its own number.",
-          "entities": "The KNX-provided entities (lights, switches, etc.) that make up this scene. Their combined state is what gets captured on snapshot, and what the state switch (next step) compares against to decide if the scene is active.",
-          "snapshot_now": "On: capture the entities' current state into the scene immediately. Off: create the scene with no stored values yet - it will only get values from the first learn telegram, button press, or manual edit."
+          "entities": "The KNX-provided entities (lights, switches, etc.) that make up this scene. Their combined state is what gets captured on snapshot, and what the state switch (next step) compares against to decide if the scene is active."
         }
       },
       "state_entity": {
@@ -29,14 +27,16 @@
           "off_action": "Off action",
           "off_scene_entity": "Scene to activate when off (if Off action is 'Activate another scene')",
           "numeric_tolerance": "Numeric attribute tolerance",
-          "debounce_seconds": "Debounce time"
+          "debounce_seconds": "Debounce time",
+          "snapshot_now": "Snapshot current state now?"
         },
         "data_description": {
           "state_group_address": "Optional. If set, this scene's active/inactive status is pushed to this KNX group address and answers GroupValueRead requests from other KNX devices. Leave blank and the state switch still works normally within Home Assistant (including HomeKit exposure) - it just won't have a status visible on the KNX bus. Must be unique across all your trackers.",
           "off_action": "What happens when the state switch is turned off (e.g. from HomeKit). 'No action' leaves it purely reflecting live state - toggling off doesn't do anything by itself. 'Activate another scene' calls scene.turn_on on the scene picked below - typically a matching 'off' tracker, keeping both directions KNX-driven. 'Turn all entities off' turns off everything listed on the previous step directly.",
           "off_scene_entity": "Only used when Off action is 'Activate another scene'. Any scene entity, not just ones tracked by this integration.",
           "numeric_tolerance": "Default 1. 0 means exact match. KNX's DPT 5.001 percentage scaling and Home Assistant's 0-255 brightness scale don't convert losslessly - 50% can come back as 127 or 126 depending on rounding direction - so a strict comparator can flicker 'inactive' on scenes that are, for all practical purposes, exactly right. Raise this further to absorb more drift. Only applies to numeric attribute values (brightness, current_position, temperature, etc.) - the on/off state itself is always compared exactly.",
-          "debounce_seconds": "Default 1.5s. How long to wait after a tracked entity's state changes before recomputing whether the scene is active. Coalesces a burst of near-simultaneous changes (several lights settling after a scene recall) into one recompute instead of many. Different entity types settle at different speeds - a plain switch is near-instant, a slow cover keeps reporting position updates throughout its travel - so tune this per tracker if needed."
+          "debounce_seconds": "Default 1.5s. How long to wait after a tracked entity's state changes before recomputing whether the scene is active. Coalesces a burst of near-simultaneous changes (several lights settling after a scene recall) into one recompute instead of many. Different entity types settle at different speeds - a plain switch is near-instant, a slow cover keeps reporting position updates throughout its travel - so tune this per tracker if needed.",
+          "snapshot_now": "On: capture the entities' current state into the scene immediately. Off: create the scene with no stored values yet - it will only get values from the first learn telegram, button press, or manual edit."
         }
       }
     },
@@ -104,16 +104,14 @@
           "group_address": "Scene control group address (e.g. 1/2/3)",
           "ga_type": "Group address type",
           "scene_number": "KNX scene number (1-64)",
-          "entities": "Entities to snapshot",
-          "snapshot_now": "Snapshot current state now?"
+          "entities": "Entities to snapshot"
         },
         "data_description": {
           "scene_name": "A friendly name for this tracker. Purely cosmetic - has no effect on entity ids or KNX communication, so it's safe to change any time.",
           "group_address": "The KNX group address your scene control object (DPT 18.001) is wired to in ETS. Both the learn (store) and recall (activate) telegrams for this scene use this same address.",
           "ga_type": "Carried over from the source tracker.",
           "scene_number": "The KNX scene number this tracker corresponds to on that group address, 1-64. Pre-filled with the next number not already used on this group address, since it must be unique - change it if you'd rather use a different one.",
-          "entities": "The KNX-provided entities (lights, switches, etc.) that make up this scene. Adjust if this duplicate should cover different entities.",
-          "snapshot_now": "On: capture the entities' current state into the scene immediately. Off: create the scene with no stored values yet - it will only get values from the first learn telegram, button press, or manual edit."
+          "entities": "The KNX-provided entities (lights, switches, etc.) that make up this scene. Adjust if this duplicate should cover different entities."
         }
       },
       "duplicate_state": {
@@ -124,14 +122,16 @@
           "off_action": "Off action",
           "off_scene_entity": "Scene to activate when off (if Off action is 'Activate another scene')",
           "numeric_tolerance": "Numeric attribute tolerance",
-          "debounce_seconds": "Debounce time"
+          "debounce_seconds": "Debounce time",
+          "snapshot_now": "Snapshot current state now?"
         },
         "data_description": {
           "state_group_address": "Optional. Cleared from the source tracker's value since it must be unique - pick a fresh one, or leave blank. If set, this scene's active/inactive status is pushed to this KNX group address and answers GroupValueRead requests. Leave blank and the state switch still works normally within Home Assistant.",
           "off_action": "What happens when the state switch is turned off. 'No action' leaves it purely reflecting live state. 'Activate another scene' calls scene.turn_on on the scene picked below. 'Turn all entities off' turns off everything listed on the previous step.",
           "off_scene_entity": "Only used when Off action is 'Activate another scene'. If the source tracker had one set, double check it still makes sense for this duplicate.",
           "numeric_tolerance": "0 means exact match. Only applies to numeric attribute values (brightness, current_position, temperature, etc.) - the on/off state itself is always compared exactly.",
-          "debounce_seconds": "How long to wait after a tracked entity's state changes before recomputing whether the scene is active."
+          "debounce_seconds": "How long to wait after a tracked entity's state changes before recomputing whether the scene is active.",
+          "snapshot_now": "On: capture the entities' current state into the scene immediately. Off: create the scene with no stored values yet - it will only get values from the first learn telegram, button press, or manual edit."
         }
       }
     },
