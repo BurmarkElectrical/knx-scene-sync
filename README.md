@@ -1,55 +1,59 @@
 # KNX Scene Sync
 
-DPT 18.001 (scene control) for Home Assistant, built for scene setting
-native KNX scenes while tracking entity state for scene feedback.
+KNX DPT 18.001 (scene control) support for Home Assistant - set and
+learn KNX scenes directly on the bus, while tracking entity state for
+live scene feedback.
 
 ## Install
 
 ### Home Assistant Community Store (HACS)
 
-If you dont have HACS installed, follow [documentation here](https://hacs.xyz/docs/setup/prerequisites)
+If you don't have HACS installed, follow the
+[documentation here](https://hacs.xyz/docs/setup/prerequisites).
 
-1. Open HACS in Home Assistant
-2. Select `Custom Repositories` using the 3 dots in top right
-3. Add `https://github.com/BurmarkElectrical/knx-scene-sync`
-4. Select `Integration` as category
-4. Search `KNX Scene Sync` in `Repository Name`, download it and restart HA
-5. Go to `settings` -> `Devices & Service` -> `Add Integration` and search for `KNX Scene Sync`
-6. Follow prompts to add tracked scenes
+1. Open HACS in Home Assistant.
+2. Select `Custom repositories` using the three dots in the top right.
+3. Add `https://github.com/BurmarkElectrical/knx-scene-sync`.
+4. Select `Integration` as the category.
+5. Find `KNX Scene Sync` in HACS, select Download, then restart Home
+   Assistant.
+6. Go to `Settings` -> `Devices & services` -> `Add integration` and
+   search for `KNX Scene Sync`.
+7. Follow the prompts to add your first tracker.
 
-**Manual**: copy `custom_components/knx_scene_sync/` into
+### Manual installation
+
+Copy `custom_components/knx_scene_sync/` into
 `config/custom_components/`, then restart Home Assistant.
 
-## Scene Tracker
+## Scene tracker
 
-- **Scene** entity - Like a KNX scene in HA, activating it sends the KNX recall telegram
-  directly to the bus, instead of controlling every member entity like a plain HA
-  scene would. 
+#### `Scene`
 
-  The scene stores its entities snapshot for status feedback.
+  The `scene` represents the KNX scene in HA. Activating it sends the KNX recall telegram directly to the bus, instead of controlling every member entity like a plain HA scene would. It stores a snapshot of its entities, which the state switch below uses for feedback.
 
-- **State switch** - tracks whether the scene is currently active by
-  comparing live entity state against a snapshot. 
+#### `State switch`
 
-  When a DPT 18.001 learn telegram is received from the bus, the trackers automatically update their snaphots.
+  State switch tracks whether the scene is currently active by comparing live entity state against that snapshot.
 
-  Controllable switch (needed for HomeKit): `on` activates the scene, `off` runs a configurable action.
+  The scene state will be send onto the bus when you configure the group address, it will also respond to `GroupValueRead` 
 
-- **KNX Learn Scene** button - sends a KNX learn telegram to the bus. Devices configured to learn the KNX scene number will store its current state. The integration will also take an entitiy snaphot at this time.
+  Turning the state switch `on` activates the scene, `off` runs a configurable action.
 
-- **Snapshot Entities** button - Overwrite stored scene snaphot. Its general practice to change the entities to the desired state, then use the **KNX Learn Scene** button - that way KNX devices and HA entities are in sync.
+#### `KNX Learn Scene`
+
+  KNX Learn Scene button sends a KNX learn telegram to the bus. Devices configured to learn on that scene number will store their current output as the scene. The integration also captures a matching entity snapshot at the same time.
+
+#### `Snapshot Entities`
+  
+  Snapshot Entities button  overwrites the stored scene snapshot on the HA side only, with no KNX traffic. General practice is to set the entities to the desired state first, then use **KNX Learn Scene** instead - that keeps both the KNX devices and HA entities in sync.
 
 ## Comparison behavior
 
-- Entities with no snapshot value, or `unknown`/`unavailable`, are
-  ignored. All-ignored means **off**, not unknown.
-- State is always compared exactly. Numeric attributes (brightness,
-  position, temperature) allow a small **tolerance** (default `1`) to
-  absorb KNX<->HA rounding drift.
-- Changes are **debounced** (default `1.5s`) so a burst of entities
-  settling after a recall triggers one recompute, not several.
-- **Status group address** (optional) exposes the switch's value to KNX
-  and answers `GroupValueRead`, via `knx.exposure_register`.
+- Entities with no snapshot value, or `unknown`/`unavailable`, are ignored. All-ignored means **`off`**, not unknown.
+- State is always compared exactly. Numeric attributes (brightness, position, temperature) allow a small **tolerance** (default `1`) to absorb KNX<->HA rounding drift.
+- Changes are **debounced** (default `1.5s`) so a burst of entities settling after a recall triggers one recompute, not several.
+- **Status group address** (optional) exposes the switch's value to KNX and answers `GroupValueRead`, via `knx.exposure_register`.
 
 ## Supported entities
 
