@@ -1,0 +1,102 @@
+"""KNX Scene Sync.
+
+Owns its scene entities directly (see scene.py) instead of relying on
+Home Assistant's generic YAML-based scene platform. Since entities now
+live and die with their config entry, there's no external file to keep in
+sync and no orphan-cleanup logic needed anymore - Home Assistant already
+guarantees an entity only exists while its entry is loaded.
+
+Learning (storing) still works the same way as before: a DPT 18.001
+store telegram - whether a real KNX-side learn, or this integration's own
+Learn button looping its telegram back - is picked up by the listener
+below and turned into a snapshot on the matching scene entity.
+"""
+from __future__ import annotations
+
+import logging
+
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import Event, HomeAssistant, callback
+
+from .activity import async_log_activity
+from .const import CONF_GROUP_ADDRESS, CONF_SCENE_NAME, CONF_SCENE_NUMBER, DOMAIN, compute_scene_id
+
+_LOGGER = logging.getLogger(__name__)
+
+PLATFORMS = ["button", "scene", "switch"]
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    ga = entry.data[CONF_GROUP_ADDRESS]
+    scene_number = int(entry.data[CONF_SCENE_NUMBER])
+    scene_id = compute_scene_id(ga, scene_number)
+
+    # Make sure this GA is included in the knx_event filter. Safe to call
+    # repeatedly - it just adds the address if it isn't already registered.
+    await hass.services.async_call(
+        "knx", "event_register", {"address": [ga]}, blocking=True
+    )
+
+    @callback
+    def _handle_knx_event(event: Event) -> None:
+        """Snapshots the tracked scene on any matching learn telegram -
+        whether it originated from KNX itself or from this entry's Learn
+        button sending the same store telegram (see button.py)."""
+        if event.data.get("destination") != ga:
+            return
+
+        raw = event.data.get("data")
+        byte = raw[0] if isinstance(raw, (list, tuple)) else raw
+        if byte is None:
+            return
+
+        _LOGGER.debug("Telegram on %s (tracker for scene %s): raw data=%s", ga, scene_number, byte)
+
+        if byte < 128:
+            _LOGGER.debug("Not a learn telegram (control bit not set), ignoring")
+            return
+
+        learned_number = (byte % 64) + 1
+        if learned_number != scene_number:
+            _LOGGER.debug(
+                "Learn telegram was for scene %s, this tracker watches scene %s, ignoring",
+                learned_number,
+                scene_number,
+            )
+            return
+
+        _LOGGER.debug("Learn telegram matched %s scene %s", ga, scene_number)
+
+        scene_entity = hass.data.get(DOMAIN, {}).get(entry.entry_id, {}).get("scene_entity")
+        if scene_entity is None:
+            _LOGGER.warning(
+                "Learn telegram matched but scene entity for '%s' isn't ready yet",
+                entry.data[CONF_SCENE_NAME],
+            )
+            return
+
+        hass.async_create_task(
+            async_log_activity(
+                hass,
+                f"scene.{scene_id}",
+                f"Received learn telegram for scene {scene_number} on {ga}",
+            )
+        )
+        hass.async_create_task(scene_entity.async_snapshot_now())
+
+    entry.async_on_unload(hass.bus.async_listen("knx_event", _handle_knx_event))
+    entry.async_on_unload(entry.add_update_listener(_async_options_updated))
+
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    return True
+
+
+async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    await hass.config_entries.async_reload(entry.entry_id)
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unloaded:
+        hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
+    return unloaded
