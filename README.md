@@ -1,7 +1,7 @@
 # KNX Scene Sync
 
-KNX DPT 18.001 (scene control) support for Home Assistant - set and
-learn KNX scenes directly on the bus, while tracking entity state for
+KNX scene control (DPT 17.001 and DPT 18.001) for Home Assistant - set
+and learn KNX scenes directly on the bus, while tracking entity state for
 live scene feedback.
 
 ## Install
