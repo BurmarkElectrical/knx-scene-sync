@@ -8,12 +8,14 @@ live scene feedback.
 
 - Home Assistant's core **KNX integration** already set up and connected
   to your bus.
+
 - The scenes themselves already **configured on your KNX devices in
   ETS** - a scene control object (DPT 17.001 or DPT 18.001) assigned to
   a group address, with each relevant actuator set to recall (and, for
   DPT 18.001, learn) on the scene number(s) you want. This integration
   doesn't create scene behavior on the KNX side - it activates, learns,
   and tracks scenes that already exist on the bus.
+
 - The entities you want to track already set up in Home Assistant via
   the KNX integration (lights, covers, climate, fans - see "Supported
   entities" below), since they need to be selectable when adding a
@@ -27,13 +29,19 @@ If you don't have HACS installed, follow the
 [documentation here](https://hacs.xyz/docs/setup/prerequisites).
 
 1. Open HACS in Home Assistant.
+
 2. Select `Custom repositories` using the three dots in the top right.
+
 3. Add `https://github.com/BurmarkElectrical/knx-scene-sync`.
+
 4. Select `Integration` as the category.
+
 5. Find `KNX Scene Sync` in HACS, select Download, then restart Home
    Assistant.
+
 6. Go to `Settings` -> `Devices & services` -> `Add integration` and
    search for `KNX Scene Sync`.
+
 7. Follow the prompts to add your first tracker.
 
 ### Manual installation
@@ -77,10 +85,18 @@ keeps both the KNX devices and HA entities in sync.
 
 ## Comparison behavior
 
-- Entities with no snapshot value, or `unknown`/`unavailable`, are ignored. All-ignored means **`off`**, not unknown.
-- State is always compared exactly. Numeric attributes (brightness, position, temperature) allow a small **tolerance** (default `1`) to absorb KNX<->HA rounding drift.
-- Changes are **debounced** (default `1.5s`) so a burst of entities settling after a recall triggers one recompute, not several.
-- **Status group address** (optional) exposes the switch's value to KNX and answers `GroupValueRead`, via `knx.exposure_register`.
+- Entities with no snapshot value, or `unknown`/`unavailable`, are
+  ignored. All-ignored means **`off`**, not unknown.
+
+- State is always compared exactly. Numeric attributes (brightness,
+  position, temperature) allow a small **tolerance** (default `1`) to
+  absorb KNX<->HA rounding drift.
+
+- Changes are **debounced** (default `1.5s`) so a burst of entities
+  settling after a recall triggers one recompute, not several.
+
+- **Status group address** (optional) exposes the switch's value to KNX
+  and answers `GroupValueRead`, via `knx.exposure_register`.
 
 ## Supported entities
 
