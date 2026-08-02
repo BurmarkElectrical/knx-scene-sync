@@ -1,8 +1,5 @@
 # KNX Scene Sync
 
-<!-- [![Validate](https://github.com/yourusername/knx-scene-sync/actions/workflows/validate.yml/badge.svg)](https://github.com/yourusername/knx-scene-sync/actions/workflows/validate.yml) -->
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-
 KNX scenes as native Home Assistant entities, built around two ideas:
 
 - **State** - every tracked scene has a switch that tells you whether it's
@@ -18,9 +15,17 @@ KNX scenes as native Home Assistant entities, built around two ideas:
 
 ## Install
 
-**HACS** (custom repository, not yet in the default store): HACS ->
-Integrations -> ⋮ -> Custom repositories -> add this repo as category
-"Integration" -> install "KNX Scene Sync".
+### Home Assistant Community Store (HACS)
+
+If you dont have HACS installed, follow [documentation here](https://hacs.xyz/docs/setup/prerequisites)
+
+1. Open HACS in Home Assistant
+2. Select `Custom Repositories` using the 3 dots in top right
+3. Add `https://github.com/BurmarkElectrical/knx-scene-sync`
+4. Select `Integration` as category
+4. Search `KNX Scene Sync` in `Repository Name`, download it and restart HA
+5. Go to `settings` -> `Devices & Service` -> `Add Integration` and search for `KNX Scene Sync`
+6. Follow prompts to add tracked scenes
 
 **Manual**: copy `custom_components/knx_scene_sync/` into
 `config/custom_components/`, then restart Home Assistant.
