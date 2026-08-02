@@ -8,12 +8,14 @@ live scene feedback.
 
 - Home Assistant's core **KNX integration** already set up and connected
   to your bus.
+
 - The scenes themselves already **configured on your KNX devices in
   ETS** - a scene control object (DPT 17.001 or DPT 18.001) assigned to
   a group address, with each relevant actuator set to recall (and, for
   DPT 18.001, learn) on the scene number(s) you want. This integration
   doesn't create scene behavior on the KNX side - it activates, learns,
   and tracks scenes that already exist on the bus.
+  
 - The entities you want to track already set up in Home Assistant via
   the KNX integration (lights, covers, climate, fans - see "Supported
   entities" below), since they need to be selectable when adding a
