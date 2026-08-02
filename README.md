@@ -1,6 +1,6 @@
 # KNX Scene Sync
 
-[![Validate](https://github.com/yourusername/knx-scene-sync/actions/workflows/validate.yml/badge.svg)](https://github.com/yourusername/knx-scene-sync/actions/workflows/validate.yml)
+<!-- [![Validate](https://github.com/yourusername/knx-scene-sync/actions/workflows/validate.yml/badge.svg)](https://github.com/yourusername/knx-scene-sync/actions/workflows/validate.yml) -->
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 KNX scenes as native Home Assistant entities, built around two ideas:
