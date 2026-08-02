@@ -15,7 +15,7 @@ live scene feedback.
   DPT 18.001, learn) on the scene number(s) you want. This integration
   doesn't create scene behavior on the KNX side - it activates, learns,
   and tracks scenes that already exist on the bus.
-  
+
 - The entities you want to track already set up in Home Assistant via
   the KNX integration (lights, covers, climate, fans - see "Supported
   entities" below), since they need to be selectable when adding a
@@ -75,21 +75,6 @@ Snapshot Entities button overwrites the stored scene snapshot on the HA
 side only, with no KNX traffic. General practice is to set the entities
 to the desired state first, then use **KNX Learn Scene** instead - that
 keeps both the KNX devices and HA entities in sync.
-
-## Group address type
-
-Each tracker's control group address can be either:
-
-- **DPT 18.001 (recall + learn)** - the default. Supports everything
-  above, including the KNX Learn Scene button and KNX-side learning.
-- **DPT 17.001 (recall only)** - a plain 1-byte scene number with no
-  control bit, so there's no way to signal "store" on the wire. The
-  KNX Learn Scene button isn't shown for these trackers, since there's
-  no valid telegram it could send. Recall (from HA or from KNX), the
-  state switch's live feedback, and the Snapshot Entities button all
-  work exactly the same either way - only KNX-triggered learning is
-  unavailable. A recall seen on the bus for a DPT 17.001 tracker is
-  still logged to the Logbook, without triggering a snapshot.
 
 ## Comparison behavior
 
