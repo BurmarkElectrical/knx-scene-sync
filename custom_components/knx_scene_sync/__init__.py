@@ -6,10 +6,13 @@ live and die with their config entry, there's no external file to keep in
 sync and no orphan-cleanup logic needed anymore - Home Assistant already
 guarantees an entity only exists while its entry is loaded.
 
-Learning (storing) still works the same way as before: a DPT 18.001
-store telegram - whether a real KNX-side learn, or this integration's own
-Learn button looping its telegram back - is picked up by the listener
-below and turned into a snapshot on the matching scene entity.
+Learning (storing) works for DPT 18.001 trackers: a store telegram -
+whether a real KNX-side learn, or this integration's own Learn button
+looping its telegram back - is picked up by the listener below and
+turned into a snapshot on the matching scene entity. DPT 17.001 trackers
+have no control bit at all, so every telegram on the GA is unambiguously
+a recall - the listener still matches and logs it (useful feedback that
+the scene was recalled from the KNX side), but never snapshots.
 """
 from __future__ import annotations
 
@@ -19,7 +22,15 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
 
 from .activity import async_log_activity
-from .const import CONF_GROUP_ADDRESS, CONF_SCENE_NAME, CONF_SCENE_NUMBER, DOMAIN, compute_scene_id
+from .const import (
+    CONF_GA_TYPE,
+    CONF_GROUP_ADDRESS,
+    CONF_SCENE_NAME,
+    CONF_SCENE_NUMBER,
+    DOMAIN,
+    GA_TYPE_DPT18,
+    compute_scene_id,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -28,6 +39,7 @@ PLATFORMS = ["button", "scene", "switch"]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     ga = entry.data[CONF_GROUP_ADDRESS]
+    ga_type = entry.data.get(CONF_GA_TYPE, GA_TYPE_DPT18)
     scene_number = int(entry.data[CONF_SCENE_NUMBER])
     scene_id = compute_scene_id(ga, scene_number)
 
@@ -39,9 +51,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     @callback
     def _handle_knx_event(event: Event) -> None:
-        """Snapshots the tracked scene on any matching learn telegram -
-        whether it originated from KNX itself or from this entry's Learn
-        button sending the same store telegram (see button.py)."""
+        """DPT 18.001: snapshots the tracked scene on any matching learn
+        telegram - whether it originated from KNX itself or from this
+        entry's Learn button sending the same store telegram (see
+        button.py). DPT 17.001: every telegram is a recall (no control
+        bit exists to check) - matched telegrams are logged, never
+        snapshotted."""
         if event.data.get("destination") != ga:
             return
 
@@ -51,6 +66,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             return
 
         _LOGGER.debug("Telegram on %s (tracker for scene %s): raw data=%s", ga, scene_number, byte)
+
+        if ga_type != GA_TYPE_DPT18:
+            # DPT 17.001 has no control bit at all - the full byte (0-63)
+            # is just the scene number, and every telegram is a recall.
+            recalled_number = (byte % 64) + 1
+            if recalled_number != scene_number:
+                return
+            _LOGGER.debug("Recall telegram matched %s scene %s (DPT 17.001)", ga, scene_number)
+            hass.async_create_task(
+                async_log_activity(
+                    hass,
+                    f"scene.{scene_id}",
+                    f"Recalled from KNX bus (scene {scene_number})",
+                )
+            )
+            return
 
         if byte < 128:
             _LOGGER.debug("Not a learn telegram (control bit not set), ignoring")

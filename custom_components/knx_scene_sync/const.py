@@ -4,6 +4,7 @@ import re
 DOMAIN = "knx_scene_sync"
 
 CONF_GROUP_ADDRESS = "group_address"
+CONF_GA_TYPE = "ga_type"
 CONF_SCENE_NUMBER = "scene_number"
 CONF_SCENE_NAME = "scene_name"
 CONF_ENTITIES = "entities"
@@ -13,6 +14,12 @@ CONF_OFF_ACTION = "off_action"
 CONF_OFF_SCENE_ENTITY = "off_scene_entity"
 CONF_NUMERIC_TOLERANCE = "numeric_tolerance"
 CONF_DEBOUNCE_SECONDS = "debounce_seconds"
+
+# DPT 18.001: recall + learn (control bit distinguishes them).
+# DPT 17.001: recall only, plain 1-byte scene number, no control bit at
+# all - there is no valid telegram that could mean "store" on the wire.
+GA_TYPE_DPT18 = "dpt18"
+GA_TYPE_DPT17 = "dpt17"
 
 OFF_ACTION_NONE = "none"
 OFF_ACTION_ACTIVATE_SCENE = "activate_scene"

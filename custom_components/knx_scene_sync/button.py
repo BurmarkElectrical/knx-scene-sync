@@ -50,10 +50,12 @@ from homeassistant.helpers.event import async_call_later
 
 from .activity import async_log_activity
 from .const import (
+    CONF_GA_TYPE,
     CONF_GROUP_ADDRESS,
     CONF_SCENE_NAME,
     CONF_SCENE_NUMBER,
     DOMAIN,
+    GA_TYPE_DPT18,
     compute_learn_payload,
     compute_scene_id,
     device_info_for_entry,
@@ -65,12 +67,14 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    async_add_entities(
-        [
-            KnxSceneSnapshotButton(hass, entry),
-            KnxSceneLearnButton(hass, entry),
-        ]
-    )
+    entities = [KnxSceneSnapshotButton(hass, entry)]
+    if entry.data.get(CONF_GA_TYPE, GA_TYPE_DPT18) == GA_TYPE_DPT18:
+        # KNX Learn Scene only makes sense for DPT 18.001 - DPT 17.001 has
+        # no control bit, so there's no valid "store" telegram it could
+        # send. Omitted entirely rather than shown disabled, since it's
+        # not a temporarily-unavailable action, it's just not possible.
+        entities.append(KnxSceneLearnButton(hass, entry))
+    async_add_entities(entities)
 
 
 def _get_scene_entity(hass: HomeAssistant, entry: ConfigEntry):

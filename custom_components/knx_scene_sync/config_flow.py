@@ -29,6 +29,7 @@ from homeassistant.helpers import selector
 from .const import (
     CONF_DEBOUNCE_SECONDS,
     CONF_ENTITIES,
+    CONF_GA_TYPE,
     CONF_GROUP_ADDRESS,
     CONF_NUMERIC_TOLERANCE,
     CONF_OFF_ACTION,
@@ -39,6 +40,8 @@ from .const import (
     CONF_STATE_GROUP_ADDRESS,
     DOMAIN,
     GA_RE,
+    GA_TYPE_DPT17,
+    GA_TYPE_DPT18,
     OFF_ACTION_ACTIVATE_SCENE,
     OFF_ACTION_NONE,
     OFF_ACTION_TURN_OFF,
@@ -60,6 +63,21 @@ def _tracker_schema(defaults: dict | None = None, include_snapshot: bool = False
         vol.Required(
             CONF_GROUP_ADDRESS, default=defaults.get(CONF_GROUP_ADDRESS, "")
         ): selector.TextSelector(),
+        vol.Required(
+            CONF_GA_TYPE, default=defaults.get(CONF_GA_TYPE, GA_TYPE_DPT18)
+        ): selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                mode=selector.SelectSelectorMode.LIST,
+                options=[
+                    selector.SelectOptionDict(
+                        value=GA_TYPE_DPT18, label="DPT 18.001 (recall + learn)"
+                    ),
+                    selector.SelectOptionDict(
+                        value=GA_TYPE_DPT17, label="DPT 17.001 (recall only)"
+                    ),
+                ],
+            )
+        ),
         # A vol.Required field with no default at all appears to leave
         # Home Assistant's number widget in a state where it visually
         # shows something (the min bound) without actually committing a
