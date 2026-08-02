@@ -4,7 +4,7 @@ current state matches what was captured, regardless of how it got that
 way (a real KNX/HA activation, or just manually setting the lights to
 matching values by hand).
 
-Rules (as specified):
+Rules:
 - Entities with no recorded snapshot value are ignored.
 - Entities currently unknown/unavailable are ignored.
 - If every entity ends up ignored, the scene is considered inactive

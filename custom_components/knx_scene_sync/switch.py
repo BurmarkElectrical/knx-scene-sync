@@ -4,8 +4,8 @@ Being a switch means it's controllable, which is what's needed for it to
 appear as a toggleable accessory when exposed through Home Assistant's
 HomeKit Bridge:
 - Turning it on activates the scene, via the same scene.turn_on path as
-  everything else (the scene entity's own Activate action, the Activate
-  button, etc.) - not a separate implementation to drift out of sync.
+  the scene entity's own Activate action - not a separate implementation
+  to drift out of sync.
 - Turning it off runs whichever "Off action" is configured for this
   tracker: no action, activating another scene (any scene, not just one
   tracked by this integration - typically a matching "off" tracker), or

@@ -70,9 +70,10 @@ def compute_learn_payload(scene_number: int) -> int:
 
 
 def compute_recall_payload(scene_number: int) -> int:
-    """Encode a DPT 18.001 recall (activate) telegram byte for
-    `scene_number`. Bit 7 clear = recall, low 6 bits = scene number - 1.
-    e.g. scene_number=23 -> 22
+    """Encode a recall (activate) telegram byte for `scene_number`.
+    Shared by DPT 17.001 and DPT 18.001 - both encode scene number - 1 in
+    the low 6 bits, DPT 18.001 with bit 7 clear (DPT 17.001 has no
+    control bit at all). e.g. scene_number=23 -> 22
     """
     return int(scene_number) - 1
 

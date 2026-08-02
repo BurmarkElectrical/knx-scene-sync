@@ -1,20 +1,12 @@
 """Config flow for KNX Scene Sync.
 
-Split into two steps for every flow (Add, Edit, Duplicate): tracker
-basics first (name, GA, scene number, entities), then a separate page for
-the state switch settings (status GA, off action). This is a genuine
-second step, not a single flat form or a collapsible section - each is
-its own async_show_form call with its own title, so there's no nested
-submission structure to flatten (an earlier collapsible-section version
-of this had exactly that, and coincided with a real "nothing gets
-created" bug - reverted rather than risk repeating it).
+Each flow (Add, Edit, Duplicate) is split into two steps: tracker basics
+first (name, GA, scene number, entities), then a separate page for the
+state switch settings (status GA, off action, tolerance, debounce).
+Each step is its own async_show_form call with its own title.
 
-Field labels, error messages, and step titles all rely on standard Home
-Assistant translation resolution (strings.json / translations/*.json) in
-the normal way - no code-side bypass. If translation loading isn't
-working correctly, Home Assistant's own fallback (showing the raw key)
-will be visible, which is the honest signal that there's a real bug to
-chase down, rather than something worth hiding.
+Field labels, error messages, and step titles rely on standard Home
+Assistant translation resolution (strings.json / translations/*.json).
 """
 from __future__ import annotations
 
@@ -78,13 +70,10 @@ def _tracker_schema(defaults: dict | None = None) -> vol.Schema:
                 ],
             )
         ),
-        # A vol.Required field with no default at all appears to leave
-        # Home Assistant's number widget in a state where it visually
-        # shows something (the min bound) without actually committing a
-        # value - submitting then silently does nothing client-side, no
-        # request ever reaches this code. Always give it a real default;
-        # callers that want a fresh, non-colliding suggestion (Duplicate)
-        # compute one explicitly - see _next_available_scene_number.
+        # Always give NumberSelector a real default (never an unset
+        # field) - callers that want a fresh, non-colliding suggestion
+        # (Duplicate) compute one explicitly, see
+        # _next_available_scene_number.
         vol.Required(
             CONF_SCENE_NUMBER, default=defaults.get(CONF_SCENE_NUMBER, 1)
         ): selector.NumberSelector(selector.NumberSelectorConfig(min=1, max=64, mode="box")),
@@ -339,9 +328,8 @@ class KnxSceneSyncConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(
         config_entry: config_entries.ConfigEntry,
     ) -> KnxSceneSyncOptionsFlow:
-        # No arguments - self.config_entry is a property the flow manager
-        # populates automatically after construction. This matches the
-        # current official Home Assistant developer docs pattern.
+        # No arguments - self.config_entry is a property the flow
+        # manager populates automatically after construction.
         return KnxSceneSyncOptionsFlow()
 
 

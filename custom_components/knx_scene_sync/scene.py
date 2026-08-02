@@ -1,15 +1,13 @@
 """The tracked scene itself, owned by this integration.
 
-This is the whole point of #2/#3 from the design discussion: Home
-Assistant's generic YAML-based scene platform always activates a scene by
-calling services on every member entity individually - there's no hook to
-change that behavior from config alone. Owning the entity ourselves means
-async_activate() can just send the DPT 18.001 recall telegram instead,
-letting the KNX actuators apply their own bus-side stored values. This
-avoids one telegram per member just to reproduce what KNX already does on
-its own, and keeps HA-triggered and KNX-triggered activation identical -
-whether it's this entity's own "Activate" in the UI, an automation calling
-scene.turn_on, or this tracker's Activate button (see button.py).
+Home Assistant's generic YAML-based scene platform always activates a
+scene by calling services on every member entity individually - there's
+no hook to change that behavior from config alone. Owning the entity
+here means async_activate() can send the DPT 18.001/17.001 recall
+telegram directly instead, letting the KNX actuators apply their own
+bus-side stored values. This keeps HA-triggered and KNX-triggered
+activation identical - whether it's this entity's own Activate action in
+the UI, an automation calling scene.turn_on, or the state switch.
 
 The "last snapshot" (captured on the most recent learn telegram, Snapshot
 button press, or initial setup) lives as this entity's own
@@ -49,15 +47,12 @@ _LOGGER = logging.getLogger(__name__)
 class KnxSceneExtraData(ExtraStoredData):
     """Persisted alongside the entity's normal restored state.
 
-    owner_entry_id is the key fix for a real bug: restore matches by
-    entity identity (scene.knxsync_..., derived from GA + scene number),
-    not by config entry. If a tracker is deleted and a new one created
-    with the same GA + scene number, it would otherwise silently inherit
-    the old tracker's leftover snapshot regardless of the new tracker's
-    own "Snapshot now?" choice. Tagging the stored data with the entry_id
-    that wrote it means a genuinely new entry (different entry_id, even
-    with identical GA/scene number) never adopts someone else's data,
-    while real HA restarts (same entry, same entry_id) restore correctly.
+    Restore matches by entity identity (scene.knxsync_..., derived from
+    GA + scene number), not by config entry. Tagging the stored data with
+    the entry_id that wrote it (owner_entry_id) means a new tracker never
+    adopts another tracker's leftover snapshot just because it happens to
+    reuse the same GA + scene number, while a real restart of the same
+    tracker (same entry_id) still restores correctly.
     """
 
     snapshot: dict
@@ -91,7 +86,7 @@ class KnxSyncedScene(Scene):
         self._attr_unique_id = scene_id
         # Set explicitly rather than left to auto-slugify from the name,
         # so the entity_id stays the stable knxsync_... form used
-        # throughout this integration (e.g. by the Activate button).
+        # throughout this integration.
         self.entity_id = f"scene.{scene_id}"
         self._attr_device_info = device_info_for_entry(entry)
         self._snapshot: dict = {}
