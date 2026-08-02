@@ -1,17 +1,7 @@
 # KNX Scene Sync
 
-KNX scenes as native Home Assistant entities, built around two ideas:
-
-- **State** - every tracked scene has a switch that tells you whether it's
-  *actually active right now*, by comparing your entities' live state
-  against what the scene expects - not just whether it was the last thing
-  triggered.
-- **Sync** - activation, learning, and status all talk to the KNX bus
-  directly (real DPT 18.001 telegrams), so Home Assistant and KNX never
-  drift out of agreement with each other, in either direction.
-
-> **Status:** early / actively developed. See `CHANGELOG.md` before
-> upgrading - don't assume compatibility across versions until `1.0.0`.
+DPT 18.001 (scene control) for Home Assistant, built for scene setting
+native KNX scenes while tracking entity state for scene feedback.
 
 ## Install
 
@@ -30,77 +20,41 @@ If you dont have HACS installed, follow [documentation here](https://hacs.xyz/do
 **Manual**: copy `custom_components/knx_scene_sync/` into
 `config/custom_components/`, then restart Home Assistant.
 
-## Quick start
+## Scene Tracker
 
-Settings -> Devices & services -> Add integration -> "KNX Scene Sync".
-It's a two-page form:
+- **Scene** entity - Like a KNX scene in HA, activating it sends the KNX recall telegram
+  directly to the bus, instead of controlling every member entity like a plain HA
+  scene would. 
 
-1. **Tracker basics** - display name, the KNX scene control group address
-   (DPT 18.001), the KNX scene number (1-64), which entities belong to
-   the scene, and whether to snapshot their current state immediately.
-2. **State switch settings** - an optional KNX status group address, what
-   happens when the switch is turned off, and tuning for the comparator
-   (tolerance, debounce - see below).
+  The scene stores its entities snapshot for status feedback.
 
-Every field has an in-app description, so this README won't repeat them.
-Use **Duplicate** (via the tracker's Configure menu) once you have one
-set up - the common case is several scenes on the same lights/GA with
-different scene numbers (bright/dim/off).
+- **State switch** - tracks whether the scene is currently active by
+  comparing live entity state against a snapshot. 
 
-## What each tracker gives you
+  When a DPT 18.001 learn telegram is received from the bus, the trackers automatically update their snaphots.
 
-One device, with:
+  Controllable switch (needed for HomeKit): `on` activates the scene, `off` runs a configurable action.
 
-- **Scene** entity - activating it (its own Activate action, a
-  dashboard, `scene.turn_on`) sends the KNX recall telegram directly,
-  rather than calling a service on every member entity like a plain HA
-  scene would. A real KNX-side learn telegram, or the Learn button here,
-  snapshots current entity state into it.
-- **State switch** - reflects whether the scene is currently active
-  (see "Staying in sync" below). It's controllable, not just a sensor:
-  on activates the scene, off runs a configurable action (do nothing,
-  activate another scene, or turn everything off). Being a switch is
-  what makes it usable as a HomeKit accessory via HA's HomeKit Bridge.
-- **Snapshot Entities** / **KNX Learn Scene** buttons - under
-  Diagnostic (not something you'd use day to day). Both require two
-  presses to confirm, since both overwrite scene data - Learn a step
-  further, bus-wide to every KNX device listening, not just this tracker.
+- **KNX Learn Scene** button - sends a KNX learn telegram to the bus. Devices configured to learn the KNX scene number will store its current state. The integration will also take an entitiy snaphot at this time.
 
-Every snapshot or activation logs to the Home Assistant **Logbook**,
-whether it came from KNX or a manual button press.
+- **Snapshot Entities** button - Overwrite stored scene snaphot. Its general practice to change the entities to the desired state, then use the **KNX Learn Scene** button - that way KNX devices and HA entities are in sync.
 
-## Staying in sync
+## Comparison behavior
 
-The state switch compares your entities' live state against the scene's
-last snapshot on every relevant change:
-
-- Entities with no snapshot value, or currently `unknown`/`unavailable`,
-  are ignored.
-- If everything ends up ignored, the switch reports **off**, not unknown.
-- The on/off state itself is always compared exactly. Numeric attributes
-  (brightness, cover position, temperature, etc.) can have a small
-  **tolerance** (slider, default `1`) - KNX's percentage byte and HA's
-  0-255 brightness scale don't convert losslessly, so an exact-match
-  comparator can flicker "inactive" on scenes that are, for all practical
-  purposes, correct.
-- Changes are **debounced** (slider, default `1.5s`) so a burst of
-  entities settling after a scene recall triggers one recompute, not
-  several. This reduces noise during a transition - it doesn't make the
-  switch wait for a slow entity (a travelling cover, say) to finish;
-  that already happens naturally since it just won't match until it's
-  actually done.
-- A fresh snapshot (learn or Snapshot button) is evaluated immediately,
-  since the comparison target itself just changed.
-
-**KNX status feedback**: set a status group address on page 2 and the
-switch's value is pushed to the bus and answers `GroupValueRead`
-automatically, via `knx.exposure_register` - not a hand-rolled listener.
-Optional; leaving it blank only affects bus visibility, not HA/HomeKit.
+- Entities with no snapshot value, or `unknown`/`unavailable`, are
+  ignored. All-ignored means **off**, not unknown.
+- State is always compared exactly. Numeric attributes (brightness,
+  position, temperature) allow a small **tolerance** (default `1`) to
+  absorb KNX<->HA rounding drift.
+- Changes are **debounced** (default `1.5s`) so a burst of entities
+  settling after a recall triggers one recompute, not several.
+- **Status group address** (optional) exposes the switch's value to KNX
+  and answers `GroupValueRead`, via `knx.exposure_register`.
 
 ## Supported entities
 
-Any KNX-provided entity can be added - the picker isn't domain-limited.
-Snapshot/comparison captures `state` plus, per domain:
+Any KNX-provided entity can be tracked. Captures `state` plus, per
+domain:
 
 | Domain | Attributes |
 |---|---|
@@ -109,27 +63,8 @@ Snapshot/comparison captures `state` plus, per domain:
 | Climate | `temperature`, `fan_mode`, `preset_mode` |
 | Fan | `percentage`, `preset_mode`, `oscillating`, `direction` |
 
-Locks and media players aren't specifically supported - only bare
-`state` would be captured, and "snapshot and compare" isn't a natural
-fit for either. Raise an issue if you have a concrete use case.
-
-## Notes / limitations
-
-- Entity ids are derived from group address + scene number
-  (`scene.knxsync_...`, `switch.knxsync_..._state`), not display name -
-  renaming a tracker never changes them; editing the GA/scene number does.
-- The scene's `last_snapshot` attribute is for visibility/history only -
-  activation always sends the KNX telegram and relies on the actuators'
-  own stored values, never replays the snapshot itself.
-- The Scene and state switch entities load concurrently, so there's a
-  brief window on startup where the switch may show "off" before the
-  scene has finished loading its snapshot - self-corrects within the
-  same startup pass.
-- No "Back" button in the two-page wizard - a Home Assistant flow
-  limitation. Cancel and restart if you need to change page 1.
-- Home Assistant has no way to customize a config flow's "Submit" button
-  text (a still-open upstream feature request), which is why step titles
-  are numbered `(1/2)`/`(2/2)` instead.
+Locks and media players aren't specifically supported - open an issue if
+you have a concrete use case.
 
 ## Debug logging
 
@@ -139,22 +74,6 @@ logger:
     custom_components.knx_scene_sync: debug
 ```
 
-Logs per-entity comparison detail (compared/ignored/matched/mismatched),
-the final active/inactive verdict, and debounce timer activity.
+## Contributing / License
 
-## Brand images
-
-`custom_components/knx_scene_sync/brand/` ships a placeholder icon and
-logo (an original abstract sync-arrows + spark design, not KNX's actual
-trademarked mark) - HA 2026.3+ reads these directly from the integration
-folder, no submission to the separate `home-assistant/brands` repo
-needed. Replace `icon.png` / `logo.png` (and their `@2x` variants) with
-real artwork whenever you have some; same filenames, same folder.
-
-## Contributing
-
-Bug reports, feature requests, and PRs welcome - see `CONTRIBUTING.md`.
-
-## License
-
-[MIT](LICENSE)
+PRs and issues welcome - see `CONTRIBUTING.md`. [MIT](LICENSE).
