@@ -20,6 +20,7 @@ import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.exceptions import ConfigEntryNotReady
 
 from .activity import async_log_activity
 from .const import (
@@ -43,11 +44,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     scene_number = int(entry.data[CONF_SCENE_NUMBER])
     scene_id = compute_scene_id(ga, scene_number)
 
-    # Make sure this GA is included in the knx_event filter. Safe to call
-    # repeatedly - it just adds the address if it isn't already registered.
-    await hass.services.async_call(
-        "knx", "event_register", {"address": [ga]}, blocking=True
-    )
+    # "dependencies": ["knx"] in manifest.json only guarantees the KNX
+    # component's code has loaded first - it does not wait for KNX's own
+    # config entry to finish connecting. If the KNX interface is offline
+    # at startup, KNX's entry can still be mid-connect (or itself
+    # retrying) when this runs, in which case hass.data["knx"] doesn't
+    # exist yet and this call raises. Catching that and raising
+    # ConfigEntryNotReady tells Home Assistant to retry this entry
+    # automatically with backoff, instead of leaving it in a failed
+    # state that only a manual reload would recover from.
+    try:
+        await hass.services.async_call(
+            "knx", "event_register", {"address": [ga]}, blocking=True
+        )
+    except Exception as err:
+        raise ConfigEntryNotReady(
+            f"KNX integration not ready yet for group address {ga}"
+        ) from err
 
     @callback
     def _handle_knx_event(event: Event) -> None:
