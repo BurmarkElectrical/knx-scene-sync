@@ -4,6 +4,14 @@ All notable changes to this project are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] - 2026-08-05
+
+### Added
+- Optional **Icon** field on page 1 of Add/Edit/Duplicate, using Home
+  Assistant's native icon picker. Applied to both the Scene and State
+  switch entities, so both match without setting each individually via
+  entity settings. Leave blank for the normal default icon.
+
 ## [0.3.2] - 2026-08-05
 
 ### Fixed

@@ -30,6 +30,7 @@ from .activity import async_log_activity
 from .const import (
     CONF_ENTITIES,
     CONF_GROUP_ADDRESS,
+    CONF_ICON,
     CONF_SCENE_NAME,
     CONF_SCENE_NUMBER,
     CONF_SNAPSHOT_NOW,
@@ -89,6 +90,7 @@ class KnxSyncedScene(Scene):
         # throughout this integration.
         self.entity_id = f"scene.{scene_id}"
         self._attr_device_info = device_info_for_entry(entry)
+        self._attr_icon = entry.data.get(CONF_ICON) or None
         self._snapshot: dict = {}
 
     async def async_added_to_hass(self) -> None:

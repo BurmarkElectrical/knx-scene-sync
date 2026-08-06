@@ -42,6 +42,7 @@ from .const import (
     CONF_DEBOUNCE_SECONDS,
     CONF_ENTITIES,
     CONF_GROUP_ADDRESS,
+    CONF_ICON,
     CONF_NUMERIC_TOLERANCE,
     CONF_OFF_ACTION,
     CONF_OFF_TARGET_ACTION,
@@ -82,6 +83,7 @@ class KnxSceneStateSwitch(SwitchEntity):
         self.entry = entry
         self._attr_unique_id = f"{entry.entry_id}_state"
         self._attr_device_info = device_info_for_entry(entry)
+        self._attr_icon = entry.data.get(CONF_ICON) or None
         self._attr_is_on = False
         self._debounce_unsub = None
 

@@ -23,6 +23,7 @@ from .const import (
     CONF_ENTITIES,
     CONF_GA_TYPE,
     CONF_GROUP_ADDRESS,
+    CONF_ICON,
     CONF_NUMERIC_TOLERANCE,
     CONF_OFF_ACTION,
     CONF_OFF_TARGET_ACTION,
@@ -56,6 +57,12 @@ def _tracker_schema(defaults: dict | None = None) -> vol.Schema:
         vol.Required(
             CONF_SCENE_NAME, default=defaults.get(CONF_SCENE_NAME, "")
         ): selector.TextSelector(),
+        # Applied to both the Scene entity and the state switch, so both
+        # representations of the tracker match. Blank leaves each entity
+        # on its normal default icon.
+        vol.Optional(
+            CONF_ICON, default=defaults.get(CONF_ICON, "")
+        ): selector.IconSelector(),
         vol.Required(
             CONF_GROUP_ADDRESS, default=defaults.get(CONF_GROUP_ADDRESS, "")
         ): selector.TextSelector(),

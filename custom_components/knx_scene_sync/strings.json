@@ -6,6 +6,7 @@
         "description": "Track a KNX scene: activating it sends a DPT 18.001 recall telegram (KNX applies its own stored values), and a matching learn (store) telegram on this group address for this scene number snapshots the selected entities' current state into the scene.",
         "data": {
           "scene_name": "Display name",
+          "icon": "Icon (optional)",
           "group_address": "Scene control group address (e.g. 1/2/3)",
           "ga_type": "Group address type",
           "scene_number": "KNX scene number (1-64)",
@@ -13,6 +14,7 @@
         },
         "data_description": {
           "scene_name": "A friendly name for this tracker. Purely cosmetic - has no effect on entity ids or KNX communication, so it's safe to change any time.",
+          "icon": "Applied to both the Scene and State switch entities. Leave blank for the normal default icon.",
           "group_address": "The KNX group address your scene control object (DPT 18.001) is wired to in ETS. Both the learn (store) and recall (activate) telegrams for this scene use this same address.",
           "ga_type": "DPT 18.001 (default) supports both recall and learn - the KNX Learn Scene button and KNX-side learning are available. DPT 17.001 is a plain 1-byte scene number with no control bit, so it's recall-only - no way to signal 'store' on the wire. Choosing DPT 17.001 removes the Learn button entirely, since there's no valid telegram it could send. Recall, state feedback, and the Snapshot Entities button work identically either way.",
           "scene_number": "The KNX scene number this tracker corresponds to on that group address, 1-64. Must be unique per group address - one GA can have up to 64 different tracked scenes, each with its own number.",
@@ -67,6 +69,7 @@
         "title": "Edit tracker (1/2)",
         "data": {
           "scene_name": "Display name",
+          "icon": "Icon (optional)",
           "group_address": "Scene control group address (e.g. 1/2/3)",
           "ga_type": "Group address type",
           "scene_number": "KNX scene number (1-64)",
@@ -74,6 +77,7 @@
         },
         "data_description": {
           "scene_name": "A friendly name for this tracker. Purely cosmetic - has no effect on entity ids or KNX communication, so it's safe to change any time.",
+          "icon": "Applied to both the Scene and State switch entities. Leave blank for the normal default icon.",
           "group_address": "The KNX group address your scene control object (DPT 18.001) is wired to in ETS. Both the learn (store) and recall (activate) telegrams for this scene use this same address. Changing this changes the tracker's entity ids.",
           "ga_type": "DPT 18.001 (default) supports both recall and learn - the KNX Learn Scene button and KNX-side learning are available. DPT 17.001 is a plain 1-byte scene number with no control bit, so it's recall-only - no way to signal 'store' on the wire. Choosing DPT 17.001 removes the Learn button entirely, since there's no valid telegram it could send. Recall, state feedback, and the Snapshot Entities button work identically either way. Changing this changes the tracker's entity ids.",
           "scene_number": "The KNX scene number this tracker corresponds to on that group address, 1-64. Must be unique per group address. Changing this changes the tracker's entity ids.",
@@ -105,6 +109,7 @@
         "description": "Pre-filled from this tracker. Pick a new scene number - it must be unique across your trackers.",
         "data": {
           "scene_name": "Display name",
+          "icon": "Icon (optional)",
           "group_address": "Scene control group address (e.g. 1/2/3)",
           "ga_type": "Group address type",
           "scene_number": "KNX scene number (1-64)",
@@ -112,6 +117,7 @@
         },
         "data_description": {
           "scene_name": "A friendly name for this tracker. Purely cosmetic - has no effect on entity ids or KNX communication, so it's safe to change any time.",
+          "icon": "Carried over from the source tracker.",
           "group_address": "The KNX group address your scene control object (DPT 18.001) is wired to in ETS. Both the learn (store) and recall (activate) telegrams for this scene use this same address.",
           "ga_type": "Carried over from the source tracker.",
           "scene_number": "The KNX scene number this tracker corresponds to on that group address, 1-64. Pre-filled with the next number not already used on this group address, since it must be unique - change it if you'd rather use a different one.",
