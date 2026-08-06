@@ -100,18 +100,21 @@ keeps both the KNX devices and HA entities in sync.
 
 ## Supported entities
 
-Any KNX-provided entity can be tracked. Captures `state` plus, per
-domain:
+Any KNX-provided entity can be tracked, in any domain. Every entity's
+`state` is captured and compared (switches, locks, binary sensors, etc.
+all work via plain state matching - `locked`/`unlocked`, `on`/`off`).
+The table below lists domains that also get extra *attributes* captured
+on top of state:
 
 | Domain | Attributes |
 |---|---|
 | Light | `brightness`, `rgb_color`, `rgbw_color`, `color_temp_kelvin`, `xy_color`, `hs_color`, `effect` |
 | Cover | `current_position`, `current_tilt_position` |
-| Climate | `temperature`, `fan_mode`, `preset_mode` |
+| Climate | `temperature` (setpoint), `fan_mode`, `preset_mode` |
 | Fan | `percentage`, `preset_mode`, `oscillating`, `direction` |
 
-Locks and media players aren't specifically supported - open an issue if
-you have a concrete use case.
+Media players are not supported. Open an issue if you have a concrete
+use case.
 
 ## Debug logging
 
