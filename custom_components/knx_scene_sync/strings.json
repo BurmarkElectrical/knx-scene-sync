@@ -35,7 +35,7 @@
           "state_group_address": "Optional KNX group address to expose scene status to (answers GroupValueRead too). Leave blank for HA/HomeKit only. Must be unique per tracker.",
           "off_action": "What the switch does when turned off. No action: nothing. Run an action: use the entity/action below. Turn all off: turns off everything from the previous step.",
           "off_target_entity": "Used only if Off action is 'Run an action on an entity'. Any entity.",
-          "off_target_action": "Action to call on that entity: Turn on, Turn off, or Toggle.",
+          "off_target_action": "Ignored for scene entities (always activated). Otherwise: Turn on, Turn off, or Toggle.",
           "numeric_tolerance": "Default 1. Allows small drift on numeric attributes (e.g. brightness rounding) when comparing state. 0 = exact match. State itself is always exact.",
           "debounce_seconds": "Default 1.5s. Wait time after a change before re-checking if the scene is active - avoids flicker during a burst of updates.",
           "snapshot_now": "On: capture current state into the scene now. Off: leave empty until the first learn or manual snapshot."
@@ -95,7 +95,7 @@
           "state_group_address": "Optional KNX group address to expose scene status to (answers GroupValueRead too). Leave blank for HA/HomeKit only. Must be unique per tracker.",
           "off_action": "What the switch does when turned off. No action: nothing. Run an action: use the entity/action below. Turn all off: turns off everything from the previous step.",
           "off_target_entity": "Used only if Off action is 'Run an action on an entity'. Any entity.",
-          "off_target_action": "Action to call on that entity: Turn on, Turn off, or Toggle.",
+          "off_target_action": "Ignored for scene entities (always activated). Otherwise: Turn on, Turn off, or Toggle.",
           "numeric_tolerance": "Default 1. Allows small drift on numeric attributes (e.g. brightness rounding) when comparing state. 0 = exact match. State itself is always exact.",
           "debounce_seconds": "Default 1.5s. Wait time after a change before re-checking if the scene is active - avoids flicker during a burst of updates."
         }
@@ -134,7 +134,7 @@
           "state_group_address": "Optional. Cleared from the source tracker since it must be unique - pick a fresh one, or leave blank.",
           "off_action": "Carried over from the source tracker.",
           "off_target_entity": "Used only if Off action is 'Run an action on an entity'. Carried over from the source tracker if set - double check it still applies.",
-          "off_target_action": "Action to call on that entity: Turn on, Turn off, or Toggle.",
+          "off_target_action": "Ignored for scene entities (always activated). Otherwise: Turn on, Turn off, or Toggle.",
           "numeric_tolerance": "Carried over from the source tracker.",
           "debounce_seconds": "Carried over from the source tracker.",
           "snapshot_now": "On: capture current state into the scene now. Off: leave empty until the first learn or manual snapshot."

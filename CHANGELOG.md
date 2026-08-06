@@ -4,6 +4,18 @@ All notable changes to this project are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.2] - 2026-08-05
+
+### Fixed
+- "Run an action on an entity" off action silently doing nothing when
+  the target was a scene entity. Home Assistant's generic
+  `homeassistant.turn_on`/`turn_off`/`toggle` services skip domains that
+  don't support "turning on" in that generic sense, and scenes -
+  stateless by design, no real on/off - are one of them; the call
+  completed with no error while doing nothing at all. Scene targets now
+  call `scene.turn_on` directly (the only thing a scene supports),
+  regardless of which action is selected.
+
 ## [0.3.1] - 2026-08-05
 
 ### Fixed

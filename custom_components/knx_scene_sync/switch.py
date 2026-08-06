@@ -199,6 +199,24 @@ class KnxSceneStateSwitch(SwitchEntity):
                     self.entry.data[CONF_SCENE_NAME],
                 )
                 return
+
+            if target.split(".", 1)[0] == "scene":
+                # Scenes are stateless (no real on/off) and are silently
+                # skipped by the generic homeassistant.turn_on/turn_off/
+                # toggle dispatcher - Home Assistant only routes that
+                # generic action to domains that support "turning on" in
+                # that sense, and scene isn't one of them. The call would
+                # complete without error while doing nothing at all. Call
+                # scene.turn_on directly instead - the only thing a scene
+                # actually supports, regardless of which action was
+                # picked above.
+                _LOGGER.debug("Off action target %s is a scene - calling scene.turn_on", target)
+                await self.hass.services.async_call(
+                    "scene", "turn_on", {"entity_id": target}, blocking=True
+                )
+                return
+
+            _LOGGER.debug("Off action calling homeassistant.%s on %s", action, target)
             await self.hass.services.async_call(
                 "homeassistant", action, {"entity_id": target}, blocking=True
             )
