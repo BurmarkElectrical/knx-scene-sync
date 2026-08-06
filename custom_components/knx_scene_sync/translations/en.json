@@ -20,10 +20,10 @@
         }
       },
       "state_entity": {
-        "title": "Add a KNX scene tracker (2/2) - state switch",
+        "title": "Add a KNX scene tracker (2/2) - State Switch",
         "description": "Configures the state switch - a controllable entity that shows whether the scene is currently active, and can activate/deactivate it.",
         "data": {
-          "state_group_address": "Status group address (optional)",
+          "state_group_address": "Status group address (e.g. 1/2/3, optional)",
           "off_action": "Off action",
           "off_target_entity": "Entity to run action on",
           "off_target_action": "Action to run",
@@ -32,7 +32,7 @@
           "snapshot_now": "Snapshot current state now?"
         },
         "data_description": {
-          "state_group_address": "Optional. Pushes scene status to this KNX address and answers GroupValueRead. Leave blank for HA/HomeKit only. Must be unique per tracker.",
+          "state_group_address": "Optional KNX group address to expose scene status to (answers GroupValueRead too). Leave blank for HA/HomeKit only. Must be unique per tracker.",
           "off_action": "What the switch does when turned off. No action: nothing. Run an action: use the entity/action below. Turn all off: turns off everything from the previous step.",
           "off_target_entity": "Used only if Off action is 'Run an action on an entity'. Any entity.",
           "off_target_action": "Action to call on that entity: Turn on, Turn off, or Toggle.",
@@ -81,10 +81,10 @@
         }
       },
       "edit_state": {
-        "title": "Edit tracker (2/2) - state switch",
+        "title": "Edit tracker (2/2) - State Switch",
         "description": "Settings for the tracker's state switch.",
         "data": {
-          "state_group_address": "Status group address (optional)",
+          "state_group_address": "Status group address (e.g. 1/2/3, optional)",
           "off_action": "Off action",
           "off_target_entity": "Entity to run action on",
           "off_target_action": "Action to run",
@@ -92,7 +92,7 @@
           "debounce_seconds": "Debounce time"
         },
         "data_description": {
-          "state_group_address": "Optional. Pushes scene status to this KNX address and answers GroupValueRead. Leave blank for HA/HomeKit only. Must be unique per tracker.",
+          "state_group_address": "Optional KNX group address to expose scene status to (answers GroupValueRead too). Leave blank for HA/HomeKit only. Must be unique per tracker.",
           "off_action": "What the switch does when turned off. No action: nothing. Run an action: use the entity/action below. Turn all off: turns off everything from the previous step.",
           "off_target_entity": "Used only if Off action is 'Run an action on an entity'. Any entity.",
           "off_target_action": "Action to call on that entity: Turn on, Turn off, or Toggle.",
@@ -119,10 +119,10 @@
         }
       },
       "duplicate_state": {
-        "title": "Duplicate as new tracker (2/2) - state switch",
+        "title": "Duplicate as new tracker (2/2) - State Switch",
         "description": "Settings for the tracker's state switch. Status group address is cleared from the source tracker - pick a fresh one if needed.",
         "data": {
-          "state_group_address": "Status group address (optional)",
+          "state_group_address": "Status group address (e.g. 1/2/3, optional)",
           "off_action": "Off action",
           "off_target_entity": "Entity to run action on",
           "off_target_action": "Action to run",
@@ -131,7 +131,7 @@
           "snapshot_now": "Snapshot current state now?"
         },
         "data_description": {
-          "state_group_address": "Optional. Pushes scene status to this KNX address and answers GroupValueRead. Leave blank for HA/HomeKit only. Must be unique per tracker.",
+          "state_group_address": "Optional. Cleared from the source tracker since it must be unique - pick a fresh one, or leave blank.",
           "off_action": "Carried over from the source tracker.",
           "off_target_entity": "Used only if Off action is 'Run an action on an entity'. Carried over from the source tracker if set - double check it still applies.",
           "off_target_action": "Action to call on that entity: Turn on, Turn off, or Toggle.",
