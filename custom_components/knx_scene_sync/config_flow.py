@@ -25,7 +25,8 @@ from .const import (
     CONF_GROUP_ADDRESS,
     CONF_NUMERIC_TOLERANCE,
     CONF_OFF_ACTION,
-    CONF_OFF_SCENE_ENTITY,
+    CONF_OFF_TARGET_ACTION,
+    CONF_OFF_TARGET_ENTITY,
     CONF_SCENE_NAME,
     CONF_SCENE_NUMBER,
     CONF_SNAPSHOT_NOW,
@@ -34,9 +35,12 @@ from .const import (
     GA_RE,
     GA_TYPE_DPT17,
     GA_TYPE_DPT18,
-    OFF_ACTION_ACTIVATE_SCENE,
     OFF_ACTION_NONE,
+    OFF_ACTION_RUN_ACTION,
     OFF_ACTION_TURN_OFF,
+    OFF_TARGET_ACTION_TOGGLE,
+    OFF_TARGET_ACTION_TURN_OFF,
+    OFF_TARGET_ACTION_TURN_ON,
     compute_scene_id,
 )
 
@@ -104,7 +108,7 @@ def _state_schema(defaults: dict | None = None, include_snapshot: bool = False) 
                 options=[
                     selector.SelectOptionDict(value=OFF_ACTION_NONE, label="No action"),
                     selector.SelectOptionDict(
-                        value=OFF_ACTION_ACTIVATE_SCENE, label="Activate another scene"
+                        value=OFF_ACTION_RUN_ACTION, label="Run an action on an entity"
                     ),
                     selector.SelectOptionDict(
                         value=OFF_ACTION_TURN_OFF, label="Turn all entities off"
@@ -112,22 +116,39 @@ def _state_schema(defaults: dict | None = None, include_snapshot: bool = False) 
                 ],
             )
         ),
-        # Only meaningful when Off action above is "Activate another
-        # scene" - always shown (a form can't conditionally hide one
-        # of its own fields) but only read/required in that case. Any
-        # scene, not just ones tracked by this integration. Unlike the
-        # text fields above, EntitySelector validates its value as an
-        # actual entity id - an empty-string default fails that check
-        # outright rather than meaning "unset", so the key is only
-        # included at all when there's a real value.
+        # Only meaningful when Off action above is "Run an action on an
+        # entity" - always shown (a form can't conditionally hide one of
+        # its own fields) but only read/required in that case. No domain
+        # restriction - any controllable entity (switch, light, scene,
+        # script, etc.) works, since the action below is a generic
+        # turn_on/turn_off/toggle. Unlike the text fields above,
+        # EntitySelector validates its value as an actual entity id - an
+        # empty-string default fails that check outright rather than
+        # meaning "unset", so the key is only included at all when
+        # there's a real value.
         vol.Optional(
-            CONF_OFF_SCENE_ENTITY,
+            CONF_OFF_TARGET_ENTITY,
             **(
-                {"default": defaults[CONF_OFF_SCENE_ENTITY]}
-                if defaults.get(CONF_OFF_SCENE_ENTITY)
+                {"default": defaults[CONF_OFF_TARGET_ENTITY]}
+                if defaults.get(CONF_OFF_TARGET_ENTITY)
                 else {}
             ),
-        ): selector.EntitySelector(selector.EntitySelectorConfig(domain="scene")),
+        ): selector.EntitySelector(),
+        vol.Required(
+            CONF_OFF_TARGET_ACTION,
+            default=defaults.get(CONF_OFF_TARGET_ACTION, OFF_TARGET_ACTION_TURN_ON),
+        ): selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                mode=selector.SelectSelectorMode.LIST,
+                options=[
+                    selector.SelectOptionDict(value=OFF_TARGET_ACTION_TURN_ON, label="Turn on"),
+                    selector.SelectOptionDict(
+                        value=OFF_TARGET_ACTION_TURN_OFF, label="Turn off"
+                    ),
+                    selector.SelectOptionDict(value=OFF_TARGET_ACTION_TOGGLE, label="Toggle"),
+                ],
+            )
+        ),
         # Slack for numeric attributes (brightness, current_position,
         # temperature, etc.) only - the on/off state itself is always
         # compared exactly regardless. Exists for KNX<->HA rounding
@@ -185,10 +206,10 @@ def _validate_state(user_input: dict[str, Any]) -> dict[str, str]:
     state_ga = user_input.get(CONF_STATE_GROUP_ADDRESS)
     if state_ga and not GA_RE.match(state_ga):
         errors[CONF_STATE_GROUP_ADDRESS] = "invalid_ga_format"
-    elif user_input[CONF_OFF_ACTION] == OFF_ACTION_ACTIVATE_SCENE and not user_input.get(
-        CONF_OFF_SCENE_ENTITY
+    elif user_input[CONF_OFF_ACTION] == OFF_ACTION_RUN_ACTION and not user_input.get(
+        CONF_OFF_TARGET_ENTITY
     ):
-        errors[CONF_OFF_SCENE_ENTITY] = "off_scene_required"
+        errors[CONF_OFF_TARGET_ENTITY] = "off_target_required"
     return errors
 
 

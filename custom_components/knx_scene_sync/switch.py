@@ -7,9 +7,10 @@ HomeKit Bridge:
   the scene entity's own Activate action - not a separate implementation
   to drift out of sync.
 - Turning it off runs whichever "Off action" is configured for this
-  tracker: no action, activating another scene (any scene, not just one
-  tracked by this integration - typically a matching "off" tracker), or
-  turning off every tracked entity directly. See async_turn_off.
+  tracker: no action, running a generic turn_on/turn_off/toggle action on
+  a chosen entity (any entity, not just ones tracked by this integration
+  - e.g. a matching "off" scene, or an all-off group switch), or turning
+  off every tracked entity directly. See async_turn_off.
 
 Also responsible for:
 - Recomputing "is the scene currently active" via comparator.py whenever
@@ -43,14 +44,16 @@ from .const import (
     CONF_GROUP_ADDRESS,
     CONF_NUMERIC_TOLERANCE,
     CONF_OFF_ACTION,
-    CONF_OFF_SCENE_ENTITY,
+    CONF_OFF_TARGET_ACTION,
+    CONF_OFF_TARGET_ENTITY,
     CONF_SCENE_NAME,
     CONF_SCENE_NUMBER,
     CONF_STATE_GROUP_ADDRESS,
     DOMAIN,
-    OFF_ACTION_ACTIVATE_SCENE,
     OFF_ACTION_NONE,
+    OFF_ACTION_RUN_ACTION,
     OFF_ACTION_TURN_OFF,
+    OFF_TARGET_ACTION_TURN_ON,
     compute_scene_id,
     device_info_for_entry,
 )
@@ -186,26 +189,41 @@ class KnxSceneStateSwitch(SwitchEntity):
         if off_action == OFF_ACTION_NONE:
             return
 
-        if off_action == OFF_ACTION_ACTIVATE_SCENE:
-            target = self.entry.data.get(CONF_OFF_SCENE_ENTITY)
+        if off_action == OFF_ACTION_RUN_ACTION:
+            target = self.entry.data.get(CONF_OFF_TARGET_ENTITY)
+            action = self.entry.data.get(CONF_OFF_TARGET_ACTION, OFF_TARGET_ACTION_TURN_ON)
             if not target:
                 _LOGGER.warning(
-                    "Off action for '%s' is set to activate another scene, "
+                    "Off action for '%s' is set to run an action on an entity, "
                     "but none is configured - doing nothing",
                     self.entry.data[CONF_SCENE_NAME],
                 )
                 return
             await self.hass.services.async_call(
-                "scene", "turn_on", {"entity_id": target}, blocking=True
+                "homeassistant", action, {"entity_id": target}, blocking=True
             )
             return
 
-        # OFF_ACTION_TURN_OFF
-        entities = self.entry.data[CONF_ENTITIES]
-        if entities:
-            await self.hass.services.async_call(
-                "homeassistant", "turn_off", {"entity_id": entities}, blocking=True
-            )
+        if off_action == OFF_ACTION_TURN_OFF:
+            entities = self.entry.data[CONF_ENTITIES]
+            if entities:
+                await self.hass.services.async_call(
+                    "homeassistant", "turn_off", {"entity_id": entities}, blocking=True
+                )
+            return
+
+        # Unrecognized value - most likely a stale config left over from
+        # before a breaking change to the available Off action options
+        # (e.g. the old "Activate another scene" option, removed in
+        # 0.3.0). Do nothing rather than silently falling through to some
+        # other behavior.
+        _LOGGER.warning(
+            "Off action '%s' for '%s' isn't recognized - it may be left "
+            "over from an older version. Reconfigure this tracker's Off "
+            "action.",
+            off_action,
+            self.entry.data[CONF_SCENE_NAME],
+        )
 
     async def _async_register_expose(self) -> None:
         address = self.entry.data.get(CONF_STATE_GROUP_ADDRESS)

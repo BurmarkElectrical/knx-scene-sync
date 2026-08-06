@@ -11,7 +11,8 @@ CONF_ENTITIES = "entities"
 CONF_SNAPSHOT_NOW = "snapshot_now"
 CONF_STATE_GROUP_ADDRESS = "state_group_address"
 CONF_OFF_ACTION = "off_action"
-CONF_OFF_SCENE_ENTITY = "off_scene_entity"
+CONF_OFF_TARGET_ENTITY = "off_target_entity"
+CONF_OFF_TARGET_ACTION = "off_target_action"
 CONF_NUMERIC_TOLERANCE = "numeric_tolerance"
 CONF_DEBOUNCE_SECONDS = "debounce_seconds"
 
@@ -22,8 +23,18 @@ GA_TYPE_DPT18 = "dpt18"
 GA_TYPE_DPT17 = "dpt17"
 
 OFF_ACTION_NONE = "none"
-OFF_ACTION_ACTIVATE_SCENE = "activate_scene"
 OFF_ACTION_TURN_OFF = "turn_off_entities"
+OFF_ACTION_RUN_ACTION = "run_action"
+
+# Generic turn_on/turn_off/toggle rather than a domain-specific action set
+# - Home Assistant's config flow forms build their schema once, with no
+# live reactivity, so the action picker can't adapt to the entity picked
+# in the same step. These three map onto homeassistant.turn_on/turn_off/
+# toggle, which HA itself translates into the right underlying action for
+# most controllable domains (switches, lights, scenes, scripts, etc.).
+OFF_TARGET_ACTION_TURN_ON = "turn_on"
+OFF_TARGET_ACTION_TURN_OFF = "turn_off"
+OFF_TARGET_ACTION_TOGGLE = "toggle"
 
 GA_RE = re.compile(r"^\d{1,2}/\d{1,2}/\d{1,3}$")
 

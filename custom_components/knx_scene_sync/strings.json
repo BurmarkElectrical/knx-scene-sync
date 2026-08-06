@@ -21,22 +21,24 @@
       },
       "state_entity": {
         "title": "Add a KNX scene tracker (2/2) - state switch",
-        "description": "This next step configures the state switch - a separate entity from the scene itself, created automatically for every tracker, that answers one question: is this scene active right now? It compares the live state of every entity from the previous step against what was captured on the last snapshot, so it reflects reality even if the scene was never actually activated - for example if someone just happened to set the lights to matching values by hand. Comparison is exact by default, though a small tolerance can be allowed for numeric attributes like brightness (see below) to absorb KNX<->HA rounding drift. It's a real switch (not just a sensor) so it's controllable too: switching it on activates the scene (the same as pressing Activate on the Scene entity itself), and switching it off runs whichever Off action you choose below. Being controllable is also what makes it usable as a HomeKit accessory later, if you expose it through Home Assistant's HomeKit Bridge.",
+        "description": "Configures the state switch - a controllable entity that shows whether the scene is currently active, and can activate/deactivate it.",
         "data": {
           "state_group_address": "Status group address (optional)",
           "off_action": "Off action",
-          "off_scene_entity": "Scene to activate when off (if Off action is 'Activate another scene')",
+          "off_target_entity": "Entity to run action on",
+          "off_target_action": "Action to run",
           "numeric_tolerance": "Numeric attribute tolerance",
           "debounce_seconds": "Debounce time",
           "snapshot_now": "Snapshot current state now?"
         },
         "data_description": {
-          "state_group_address": "Optional. If set, this scene's active/inactive status is pushed to this KNX group address and answers GroupValueRead requests from other KNX devices. Leave blank and the state switch still works normally within Home Assistant (including HomeKit exposure) - it just won't have a status visible on the KNX bus. Must be unique across all your trackers.",
-          "off_action": "What happens when the state switch is turned off (e.g. from HomeKit). 'No action' leaves it purely reflecting live state - toggling off doesn't do anything by itself. 'Activate another scene' calls scene.turn_on on the scene picked below - typically a matching 'off' tracker, keeping both directions KNX-driven. 'Turn all entities off' turns off everything listed on the previous step directly.",
-          "off_scene_entity": "Only used when Off action is 'Activate another scene'. Any scene entity, not just ones tracked by this integration.",
-          "numeric_tolerance": "Default 1. 0 means exact match. KNX's DPT 5.001 percentage scaling and Home Assistant's 0-255 brightness scale don't convert losslessly - 50% can come back as 127 or 126 depending on rounding direction - so a strict comparator can flicker 'inactive' on scenes that are, for all practical purposes, exactly right. Raise this further to absorb more drift. Only applies to numeric attribute values (brightness, current_position, temperature, etc.) - the on/off state itself is always compared exactly.",
-          "debounce_seconds": "Default 1.5s. How long to wait after a tracked entity's state changes before recomputing whether the scene is active. Coalesces a burst of near-simultaneous changes (several lights settling after a scene recall) into one recompute instead of many. Different entity types settle at different speeds - a plain switch is near-instant, a slow cover keeps reporting position updates throughout its travel - so tune this per tracker if needed.",
-          "snapshot_now": "On: capture the entities' current state into the scene immediately. Off: create the scene with no stored values yet - it will only get values from the first learn telegram, button press, or manual edit."
+          "state_group_address": "Optional. Pushes scene status to this KNX address and answers GroupValueRead. Leave blank for HA/HomeKit only. Must be unique per tracker.",
+          "off_action": "What the switch does when turned off. No action: nothing. Run an action: use the entity/action below. Turn all off: turns off everything from the previous step.",
+          "off_target_entity": "Used only if Off action is 'Run an action on an entity'. Any entity.",
+          "off_target_action": "Action to call on that entity: Turn on, Turn off, or Toggle.",
+          "numeric_tolerance": "Default 1. Allows small drift on numeric attributes (e.g. brightness rounding) when comparing state. 0 = exact match. State itself is always exact.",
+          "debounce_seconds": "Default 1.5s. Wait time after a change before re-checking if the scene is active - avoids flicker during a burst of updates.",
+          "snapshot_now": "On: capture current state into the scene now. Off: leave empty until the first learn or manual snapshot."
         }
       }
     },
@@ -45,8 +47,8 @@
       "no_entities": "Select at least one entity",
       "already_configured": "This group address and scene number combination is already tracked - pick a different scene number",
       "state_ga_already_configured": "This status group address is already used by another tracker - pick a different one",
-      "off_scene_required": "Pick a scene to activate, or choose a different Off action",
-      "duplicate_failed": "Could not create the duplicate tracker - it may already exist. Check Settings > Devices & services."
+      "duplicate_failed": "Could not create the duplicate tracker - it may already exist. Check Settings > Devices & services.",
+      "off_target_required": "Pick an entity to run the action on, or choose a different Off action"
     },
     "abort": {
       "already_configured": "This group address and scene number combination is already tracked"
@@ -80,20 +82,22 @@
       },
       "edit_state": {
         "title": "Edit tracker (2/2) - state switch",
-        "description": "The state switch answers one question: is this scene active right now? It compares the live state of every entity from the previous step against the last snapshot, so it reflects reality even if the scene was never actually activated. Switching it on activates the scene; switching it off runs whichever Off action you choose below.",
+        "description": "Settings for the tracker's state switch.",
         "data": {
           "state_group_address": "Status group address (optional)",
           "off_action": "Off action",
-          "off_scene_entity": "Scene to activate when off (if Off action is 'Activate another scene')",
+          "off_target_entity": "Entity to run action on",
+          "off_target_action": "Action to run",
           "numeric_tolerance": "Numeric attribute tolerance",
           "debounce_seconds": "Debounce time"
         },
         "data_description": {
-          "state_group_address": "Optional. If set, this scene's active/inactive status is pushed to this KNX group address and answers GroupValueRead requests from other KNX devices. Leave blank and the state switch still works normally within Home Assistant (including HomeKit exposure) - it just won't have a status visible on the KNX bus. Must be unique across all your trackers.",
-          "off_action": "What happens when the state switch is turned off (e.g. from HomeKit). 'No action' leaves it purely reflecting live state - toggling off doesn't do anything by itself. 'Activate another scene' calls scene.turn_on on the scene picked below - typically a matching 'off' tracker, keeping both directions KNX-driven. 'Turn all entities off' turns off everything listed on the previous step directly.",
-          "off_scene_entity": "Only used when Off action is 'Activate another scene'. Any scene entity, not just ones tracked by this integration.",
-          "numeric_tolerance": "Default 1. 0 means exact match. KNX's DPT 5.001 percentage scaling and Home Assistant's 0-255 brightness scale don't convert losslessly - 50% can come back as 127 or 126 depending on rounding direction - so a strict comparator can flicker 'inactive' on scenes that are, for all practical purposes, exactly right. Raise this further to absorb more drift. Only applies to numeric attribute values (brightness, current_position, temperature, etc.) - the on/off state itself is always compared exactly.",
-          "debounce_seconds": "Default 1.5s. How long to wait after a tracked entity's state changes before recomputing whether the scene is active. Coalesces a burst of near-simultaneous changes (several lights settling after a scene recall) into one recompute instead of many. Different entity types settle at different speeds - a plain switch is near-instant, a slow cover keeps reporting position updates throughout its travel - so tune this per tracker if needed."
+          "state_group_address": "Optional. Pushes scene status to this KNX address and answers GroupValueRead. Leave blank for HA/HomeKit only. Must be unique per tracker.",
+          "off_action": "What the switch does when turned off. No action: nothing. Run an action: use the entity/action below. Turn all off: turns off everything from the previous step.",
+          "off_target_entity": "Used only if Off action is 'Run an action on an entity'. Any entity.",
+          "off_target_action": "Action to call on that entity: Turn on, Turn off, or Toggle.",
+          "numeric_tolerance": "Default 1. Allows small drift on numeric attributes (e.g. brightness rounding) when comparing state. 0 = exact match. State itself is always exact.",
+          "debounce_seconds": "Default 1.5s. Wait time after a change before re-checking if the scene is active - avoids flicker during a burst of updates."
         }
       },
       "duplicate": {
@@ -116,22 +120,24 @@
       },
       "duplicate_state": {
         "title": "Duplicate as new tracker (2/2) - state switch",
-        "description": "The state switch answers one question: is this scene active right now? It compares the live state of every entity from the previous step against the last snapshot, so it reflects reality even if the scene was never actually activated. Switching it on activates the scene; switching it off runs whichever Off action you choose below. Status group address is cleared from the source tracker since it must be unique - pick a fresh one if needed.",
+        "description": "Settings for the tracker's state switch. Status group address is cleared from the source tracker - pick a fresh one if needed.",
         "data": {
           "state_group_address": "Status group address (optional)",
           "off_action": "Off action",
-          "off_scene_entity": "Scene to activate when off (if Off action is 'Activate another scene')",
+          "off_target_entity": "Entity to run action on",
+          "off_target_action": "Action to run",
           "numeric_tolerance": "Numeric attribute tolerance",
           "debounce_seconds": "Debounce time",
           "snapshot_now": "Snapshot current state now?"
         },
         "data_description": {
-          "state_group_address": "Optional. Cleared from the source tracker's value since it must be unique - pick a fresh one, or leave blank. If set, this scene's active/inactive status is pushed to this KNX group address and answers GroupValueRead requests. Leave blank and the state switch still works normally within Home Assistant.",
-          "off_action": "What happens when the state switch is turned off. 'No action' leaves it purely reflecting live state. 'Activate another scene' calls scene.turn_on on the scene picked below. 'Turn all entities off' turns off everything listed on the previous step.",
-          "off_scene_entity": "Only used when Off action is 'Activate another scene'. If the source tracker had one set, double check it still makes sense for this duplicate.",
-          "numeric_tolerance": "0 means exact match. Only applies to numeric attribute values (brightness, current_position, temperature, etc.) - the on/off state itself is always compared exactly.",
-          "debounce_seconds": "How long to wait after a tracked entity's state changes before recomputing whether the scene is active.",
-          "snapshot_now": "On: capture the entities' current state into the scene immediately. Off: create the scene with no stored values yet - it will only get values from the first learn telegram, button press, or manual edit."
+          "state_group_address": "Optional. Pushes scene status to this KNX address and answers GroupValueRead. Leave blank for HA/HomeKit only. Must be unique per tracker.",
+          "off_action": "Carried over from the source tracker.",
+          "off_target_entity": "Used only if Off action is 'Run an action on an entity'. Carried over from the source tracker if set - double check it still applies.",
+          "off_target_action": "Action to call on that entity: Turn on, Turn off, or Toggle.",
+          "numeric_tolerance": "Carried over from the source tracker.",
+          "debounce_seconds": "Carried over from the source tracker.",
+          "snapshot_now": "On: capture current state into the scene now. Off: leave empty until the first learn or manual snapshot."
         }
       }
     },
@@ -140,8 +146,8 @@
       "no_entities": "Select at least one entity",
       "already_configured": "This group address and scene number combination is already tracked - pick a different scene number",
       "state_ga_already_configured": "This status group address is already used by another tracker - pick a different one",
-      "off_scene_required": "Pick a scene to activate, or choose a different Off action",
-      "duplicate_failed": "Could not create the duplicate tracker - it may already exist. Check Settings > Devices & services."
+      "duplicate_failed": "Could not create the duplicate tracker - it may already exist. Check Settings > Devices & services.",
+      "off_target_required": "Pick an entity to run the action on, or choose a different Off action"
     }
   }
 }
