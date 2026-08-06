@@ -93,15 +93,29 @@ def _tracker_schema(defaults: dict | None = None) -> vol.Schema:
     return vol.Schema(fields)
 
 
+_VALID_OFF_ACTIONS = {OFF_ACTION_NONE, OFF_ACTION_RUN_ACTION, OFF_ACTION_TURN_OFF}
+
+
 def _state_schema(defaults: dict | None = None, include_snapshot: bool = False) -> vol.Schema:
     defaults = defaults or {}
+
+    # A tracker's stored off_action can predate a breaking change to the
+    # available options (e.g. the old "activate_scene", removed in
+    # 0.3.0). Passing that straight through as this field's default would
+    # feed the SelectSelector a value that isn't one of its own options,
+    # which renders confusingly and can silently resubmit unchanged if
+    # the person doesn't happen to touch this specific dropdown. Falling
+    # back to a valid, visible default instead.
+    stored_off_action = defaults.get(CONF_OFF_ACTION, OFF_ACTION_NONE)
+    if stored_off_action not in _VALID_OFF_ACTIONS:
+        stored_off_action = OFF_ACTION_NONE
 
     fields: dict = {
         vol.Optional(
             CONF_STATE_GROUP_ADDRESS, default=defaults.get(CONF_STATE_GROUP_ADDRESS, "")
         ): selector.TextSelector(),
         vol.Required(
-            CONF_OFF_ACTION, default=defaults.get(CONF_OFF_ACTION, OFF_ACTION_NONE)
+            CONF_OFF_ACTION, default=stored_off_action
         ): selector.SelectSelector(
             selector.SelectSelectorConfig(
                 mode=selector.SelectSelectorMode.LIST,

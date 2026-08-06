@@ -4,6 +4,17 @@ All notable changes to this project are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.1] - 2026-08-05
+
+### Fixed
+- Editing a tracker still carrying a pre-0.3.0 Off action value (e.g.
+  the old "Activate another scene") could silently resubmit that stale
+  value unchanged - the Edit form's Off action dropdown was defaulting
+  to a value that no longer exists as an option, which doesn't render
+  as a real selection. The form now falls back to "No action" for any
+  stored value it doesn't recognize, so it's always a real, visible
+  selection you can consciously change.
+
 ## [0.3.0] - 2026-08-04
 
 ### Changed
